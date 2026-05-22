@@ -1,4 +1,4 @@
-# alpha-dog investor pitch: AI-native strategy workflows
+# Alpha-Dog: AI-native strategy workflows
 
 ## The idea
 
@@ -247,6 +247,8 @@ These six illustrate the topologies that competitors cannot express. Each has at
 **Idea:** When one company warns about demand weakness, find exposed peers and suppliers before they react.
 
 **Workflow:** Detect negative guidance from Company A → LLM multi-hop research node proposes likely affected suppliers, customers, competitors, and sector ETFs with reasoning → rank by second-order exposure → check whether each exposed name has already moved → trade laggards with explicit thesis logging → re-evaluate as analysts respond.
+
+![Guidance revision chain reaction workflow in the alpha-dog Studio](guidance_chain_reaction.png)
 
 **Why AI helps:** This is a reasoning graph problem — "who else is affected?" — that no rule engine can express.
 
