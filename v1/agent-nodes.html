@@ -1,0 +1,721 @@
+<title>What agent nodes add to a trading DAG</title>
+<style>
+  :root {
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface-2: #EEF1F4;
+    --ink: #161B24;
+    --muted: #58616E;
+    --faint: #8A94A2;
+    --hairline: #E2E6EC;
+    --accent: #A8710F;
+    --accent-strong: #815409;
+    --accent-line: #C79233;
+    --accent-soft: rgba(180, 128, 32, 0.10);
+    --pos: #1E8A53;
+    --neg: #C0392B;
+    --mono-bg: #EDF0F3;
+    --glow: rgba(180, 128, 32, 0.16);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0C1017;
+      --surface: #131A23;
+      --surface-2: #1A222D;
+      --ink: #E6EAF1;
+      --muted: #96A1B0;
+      --faint: #6C7887;
+      --hairline: #232C38;
+      --accent: #E7B24E;
+      --accent-strong: #F1C877;
+      --accent-line: #E7B24E;
+      --accent-soft: rgba(231, 178, 78, 0.12);
+      --pos: #52B87A;
+      --neg: #E37162;
+      --mono-bg: #0F151D;
+      --glow: rgba(231, 178, 78, 0.20);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F5F6F8; --surface: #FFFFFF; --surface-2: #EEF1F4; --ink: #161B24;
+    --muted: #58616E; --faint: #8A94A2; --hairline: #E2E6EC; --accent: #A8710F;
+    --accent-strong: #815409; --accent-line: #C79233; --accent-soft: rgba(180,128,32,0.10);
+    --pos: #1E8A53; --neg: #C0392B; --mono-bg: #EDF0F3; --glow: rgba(180,128,32,0.16);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0C1017; --surface: #131A23; --surface-2: #1A222D; --ink: #E6EAF1;
+    --muted: #96A1B0; --faint: #6C7887; --hairline: #232C38; --accent: #E7B24E;
+    --accent-strong: #F1C877; --accent-line: #E7B24E; --accent-soft: rgba(231,178,78,0.12);
+    --pos: #52B87A; --neg: #E37162; --mono-bg: #0F151D; --glow: rgba(231,178,78,0.20);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--accent-soft); }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px 6rem; }
+
+  /* ---- hero ---- */
+  header.hero { padding: clamp(3.5rem, 9vw, 6.5rem) 0 2.5rem; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin: 0 0 1.4rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 1px; background: var(--accent-line); flex: none;
+  }
+  h1 {
+    font-family: var(--sans);
+    font-weight: 720;
+    font-size: clamp(2.1rem, 6.2vw, 3.35rem);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-family: var(--serif);
+    font-size: clamp(1.18rem, 2.5vw, 1.4rem);
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 1.9rem 0 0;
+    padding: 1.5rem 0 0.2rem 1.4rem;
+    border-left: 3px solid var(--accent-line);
+  }
+  .standfirst b { font-weight: 600; color: var(--accent-strong); font-style: normal; }
+
+  /* ---- sections ---- */
+  section { padding-top: 3.4rem; }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    margin: 0 0 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 680;
+    font-size: clamp(1.4rem, 3.4vw, 1.72rem);
+    line-height: 1.18;
+    letter-spacing: -0.018em;
+    margin: 0 0 1.1rem;
+    text-wrap: balance;
+  }
+  p { margin: 0 0 1.15rem; }
+  p.lead-tight { margin-top: -0.2rem; }
+  strong { font-weight: 650; }
+  em { color: var(--muted); }
+  code, .mono { font-family: var(--mono); }
+  code {
+    font-size: 0.86em;
+    background: var(--mono-bg);
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    padding: 0.08em 0.4em;
+    color: var(--accent-strong);
+    word-break: break-word;
+  }
+  .pos { color: var(--pos); font-weight: 600; }
+  .neg { color: var(--neg); font-weight: 600; }
+
+  /* ---- pipeline flow diagram ---- */
+  .flow-wrap { overflow-x: auto; margin: 0 0 1.6rem; padding-bottom: 6px; }
+  .flow {
+    display: flex; align-items: stretch; gap: 0;
+    min-width: max-content;
+  }
+  .stage {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 7px;
+    padding: 0.5rem 0.72rem;
+    white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  }
+  .flow .arrow {
+    align-self: center;
+    color: var(--faint);
+    font-family: var(--mono);
+    padding: 0 0.36rem;
+    flex: none;
+  }
+  .flow-note { font-size: 0.86rem; color: var(--muted); margin-top: -0.4rem; }
+
+  /* ---- formula vs agent cards ---- */
+  .contrast {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 0.4rem 0 1.7rem;
+  }
+  @media (max-width: 620px) { .contrast { grid-template-columns: 1fr; } }
+  .node-card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 1.15rem 1.15rem 1.25rem;
+  }
+  .node-card.agent {
+    border-color: var(--accent-line);
+    box-shadow: 0 0 0 1px var(--accent-line), 0 6px 26px -12px var(--glow);
+    background:
+      linear-gradient(180deg, var(--accent-soft), transparent 60%),
+      var(--surface);
+  }
+  .node-card .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--faint);
+    margin: 0 0 0.85rem;
+  }
+  .node-card.agent .tag { color: var(--accent); }
+  .io { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.4rem; }
+  .io .chip {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    padding: 0.32rem 0.55rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .io .core {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    padding: 0.32rem 0.6rem;
+    border-radius: 6px;
+    border: 1px dashed var(--hairline);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .node-card.agent .io .core {
+    border: 1px solid var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-weight: 600;
+  }
+  .io .op { color: var(--faint); font-family: var(--mono); }
+  .node-card .out {
+    margin: 0.95rem 0 0;
+    font-size: 0.92rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .node-card.agent .out { color: var(--ink); }
+
+  /* ---- callout ---- */
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--accent-line);
+    border-radius: 0 10px 10px 0;
+    padding: 1rem 1.2rem;
+    margin: 0 0 1.4rem;
+    font-size: 0.98rem;
+  }
+  .callout b { color: var(--accent-strong); font-weight: 650; }
+
+  /* ---- feature list (definition style) ---- */
+  .features { display: grid; gap: 14px; margin: 0.3rem 0 0.6rem; padding: 0; list-style: none; }
+  .features li {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 11px;
+    padding: 1.05rem 1.2rem;
+  }
+  .features .flabel {
+    display: block;
+    font-weight: 680;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.35rem;
+    font-size: 1.02rem;
+  }
+  .features p { margin: 0; font-size: 0.96rem; color: var(--muted); }
+  .features p .ink { color: var(--ink); }
+
+  /* ---- plain bullet lists ---- */
+  ul.bul { margin: 0 0 1.3rem; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
+  ul.bul > li {
+    position: relative;
+    padding-left: 1.5rem;
+    color: var(--muted);
+    font-size: 0.98rem;
+  }
+  ul.bul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.15rem; top: 0.62em;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-line);
+  }
+  ul.bul > li .ink { color: var(--ink); font-weight: 600; }
+  ul.bul.q > li { color: var(--ink); }
+
+  .inside-list li::before { border-radius: 1px; }
+
+  /* ---- comparison table ---- */
+  .table-wrap { overflow-x: auto; margin: 0.4rem 0 1.4rem; border: 1px solid var(--hairline); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.92rem; }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    padding: 0.85rem 1rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--hairline);
+  }
+  tbody td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr { background: var(--surface); }
+  td.classic { color: var(--muted); }
+  td.classic .n { font-family: var(--mono); color: var(--ink); font-size: 0.86rem; }
+  td.up { color: var(--ink); }
+  td.up .n { font-family: var(--mono); color: var(--accent-strong); font-size: 0.86rem; }
+
+  /* ---- guardrails grid ---- */
+  .guards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 0.3rem 0 0.6rem; padding: 0; list-style: none; }
+  @media (max-width: 620px) { .guards { grid-template-columns: 1fr; } }
+  .guards li {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 11px;
+    padding: 1.05rem 1.15rem;
+  }
+  .guards .glabel {
+    display: flex; align-items: baseline; gap: 0.5rem;
+    font-weight: 680; margin: 0 0 0.4rem; font-size: 0.99rem;
+  }
+  .guards .glabel::before {
+    content: "✓";
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .guards p { margin: 0; font-size: 0.93rem; color: var(--muted); }
+
+  /* ---- DAG one-line note ---- */
+  .dag-note {
+    margin: 1.3rem 0 0;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .dag-note strong { color: var(--ink); font-weight: 650; }
+
+  /* ---- arena panels ---- */
+  .arena {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 1.25rem 1.35rem 0.5rem;
+    margin: 0 0 16px;
+  }
+  .arena-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .arena-ceiling { font-size: 0.96rem; color: var(--muted); margin: 0 0 1.1rem; }
+  .arena .adds {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 0 0 0.75rem;
+    display: flex; align-items: center; gap: 0.55rem;
+  }
+  .arena .adds::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+  .arena .bul { margin-bottom: 1.05rem; }
+
+  /* ---- closing ---- */
+  .closing {
+    font-family: var(--serif);
+    font-size: clamp(1.16rem, 2.5vw, 1.42rem);
+    line-height: 1.55;
+    margin: 3.6rem 0 0;
+    padding: 2.2rem 0 0;
+    border-top: 1px solid var(--hairline);
+    text-wrap: pretty;
+  }
+  .closing b { color: var(--accent-strong); font-weight: 600; }
+
+  footer {
+    margin-top: 3rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1rem;
+  }
+
+  /* ---- motion ---- */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">System design &middot; Algorithmic trading</p>
+    <h1>What agent nodes add to a trading DAG</h1>
+    <p class="standfirst">
+      A trading strategy is naturally a graph of nodes &mdash; but in the classic setup every node is a
+      formula, so the strategy can only act on things you can reduce to arithmetic. An <b>agent node</b>
+      is a box with the same plug shape that runs an LLM inside instead: it can read the messy text, go
+      look things up, and make a judgment. Because it drops in like any other node, you can put judgment
+      anywhere a formula used to be the ceiling. The deterministic pipeline stays fast and auditable; the
+      agent nodes fire rarely, right where you&rsquo;d otherwise need an analyst &mdash; and they leave a receipt.
+    </p>
+    <p class="dag-note">A <strong>DAG</strong> &mdash; directed acyclic graph &mdash; is just a flowchart of boxes
+      joined by arrows, where data flows one way from start to finish and never loops back.</p>
+  </header>
+
+  <section class="reveal">
+    <p class="kicker">The setup</p>
+    <h2>The classic picture, quickly</h2>
+    <p class="lead-tight">A quant strategy is naturally a directed graph &mdash; each node takes inputs, transforms
+      them, hands the result downstream:</p>
+
+    <div class="flow-wrap" role="img" aria-label="Pipeline: data to universe to filters to features to score to rank to portfolio to risk to execute to attribute">
+      <div class="flow">
+        <span class="stage">data</span><span class="arrow">&rarr;</span>
+        <span class="stage">universe</span><span class="arrow">&rarr;</span>
+        <span class="stage">filters</span><span class="arrow">&rarr;</span>
+        <span class="stage">features</span><span class="arrow">&rarr;</span>
+        <span class="stage">score</span><span class="arrow">&rarr;</span>
+        <span class="stage">rank</span><span class="arrow">&rarr;</span>
+        <span class="stage">portfolio</span><span class="arrow">&rarr;</span>
+        <span class="stage">risk</span><span class="arrow">&rarr;</span>
+        <span class="stage">execute</span><span class="arrow">&rarr;</span>
+        <span class="stage">attribute</span>
+      </div>
+    </div>
+
+    <p>Load the data, cut it to a tradeable universe, drop the risky names, compute signals (momentum,
+      quality, valuation, volatility), combine them into a score, rank, build a portfolio under
+      position/sector/beta limits, turn targets into orders, measure what worked. It&rsquo;s a nice model
+      &mdash; every node is deterministic, testable on its own, and backtestable.</p>
+
+    <div class="callout">
+      But look at what each of those boxes actually is: <b>a formula.</b> Momentum is a division, a filter
+      is a threshold, the optimizer is a solver. Numbers in, numbers out. If you can&rsquo;t write the rule as
+      math, the node can&rsquo;t exist.
+    </div>
+
+    <p>That&rsquo;s fine until you want to trade on the stuff that isn&rsquo;t numbers:</p>
+    <ul class="bul q">
+      <li>An 8-K dropped &mdash; dilutive financing (bad) or an acquisition (good)?</li>
+      <li>The FDA sent a letter &mdash; approval, or a rejection dressed up in jargon?</li>
+      <li>&ldquo;Company X in talks&rdquo; &mdash; the X we hold, or a same-named private firm?</li>
+      <li>The book&rsquo;s full and a better idea shows up &mdash; which holding do we drop?</li>
+    </ul>
+    <p>Those are judgment calls over messy, mostly-text evidence &mdash; the stuff a human analyst handles and
+      a spreadsheet can&rsquo;t. A pure-formula DAG either ignores them or fakes it with a crude proxy (count the
+      scary keywords, cut the biggest loser). That&rsquo;s the ceiling, and it&rsquo;s where agent nodes come in.</p>
+  </section>
+
+  <section class="reveal">
+    <p class="kicker">The idea</p>
+    <h2>A box that can think, where a formula used to sit</h2>
+    <p class="lead-tight">An agent node has the same plug shape as any other node &mdash; typed inputs, typed
+      outputs, drops into the graph like any box &mdash; but instead of a formula, its insides are an LLM that
+      can read, look things up, reason, and hand back a decision.</p>
+
+    <div class="contrast">
+      <div class="node-card">
+        <p class="tag">Formula node</p>
+        <div class="io">
+          <span class="chip">inputs</span><span class="op">&rarr;</span>
+          <span class="core">a formula</span><span class="op">&rarr;</span>
+        </div>
+        <p class="out">&hellip; a number.</p>
+      </div>
+      <div class="node-card agent">
+        <p class="tag">Agent node</p>
+        <div class="io">
+          <span class="chip">inputs</span><span class="op">&rarr;</span>
+          <span class="core">read &middot; research &middot; judge</span><span class="op">&rarr;</span>
+        </div>
+        <p class="out">&hellip; a decision <strong>+ confidence + why.</strong></p>
+      </div>
+    </div>
+    <p>That single substitution &mdash; a node that can think, sitting anywhere a formula used to sit &mdash; is
+      where the rest of it comes from.</p>
+  </section>
+
+  <section class="reveal">
+    <p class="kicker">What it buys you</p>
+    <h2>Four things a formula can&rsquo;t do</h2>
+    <ul class="features">
+      <li>
+        <span class="flabel">Text becomes signal</span>
+        <p>A formula only eats numbers, so filings, news bodies, earnings-call commentary, and FDA letters
+          are dead weight (at best you count keywords and call it sentiment). <span class="ink">An agent
+          reads the actual 8-K and reasons over it</span> &mdash; the whole qualitative side of the market turns
+          into a real input. New feeds slot in free, too: a crowd-sentiment API is both a plain &ldquo;buzz&rdquo;
+          number <em>and</em> something an agent can weigh as evidence.</p>
+      </li>
+      <li>
+        <span class="flabel">Judgment where a formula would quietly lie</span>
+        <p>&ldquo;Is this catalyst material?&rdquo; has a number attached (price moved 4%) but the honest answer needs
+          context a threshold can&rsquo;t see. Our <code>portfolio_displacer</code> ranks a new idea against the
+          weakest holdings by whether each thesis still has room to run &mdash; <span class="ink">keeping a
+          <span class="neg">red</span> position whose story is alive over a <span class="pos">green</span> one
+          whose catalyst is spent.</span> No ranking formula gets that right, because &ldquo;is the reason still
+          true&rdquo; isn&rsquo;t in the price.</p>
+      </li>
+      <li>
+        <span class="flabel">Research mid-decision, with any tools you hand it</span>
+        <p>A formula only sees the inputs you wired in; an agent gets a toolbox &mdash; resolve an entity, pull
+          related news, check SEC filings and halts, fetch a URL, and, yes, <span class="ink">a plain open web
+          search like you&rsquo;d run yourself</span> &mdash; and it decides on the fly which to reach for and when it
+          has enough. In testing, the displacement node caught a <em>fake</em> catalyst: the claimed contract
+          &ldquo;did not surface in search results,&rdquo; so it passed. A formula can&rsquo;t be skeptical.</p>
+      </li>
+      <li>
+        <span class="flabel">The universe can come to you</span>
+        <p>The classic DAG starts from &ldquo;all US equities&rdquo; and filters down on a clock. <span class="ink">Agents
+          let you go the other way:</span> a news row or filing lands, wakes a strategy, and spins up a one-shot
+          look at that one name &mdash; a universe of one, born from an event, that expires when the event resolves.
+          You can&rsquo;t build that from formulas, because the interesting part (&ldquo;is this worth acting on?&rdquo;)
+          <em>is</em> the judgment.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <p class="kicker">Depth behind one box</p>
+    <h2>One box, a whole team inside</h2>
+    <p class="lead-tight">An agent node is one box on the graph, but that box is just a boundary &mdash; what lives
+      inside can be as involved as you want, and the rest of the graph doesn&rsquo;t know or care. Inside a single
+      &ldquo;review this catalyst&rdquo; box, an agent can:</p>
+    <ul class="bul inside-list">
+      <li>go find documents and read them;</li>
+      <li>loop &mdash; <span class="mono">search &rarr; read &rarr; &ldquo;not enough&rdquo; &rarr; search again;</span></li>
+      <li>spin up sub-agents (one gathers, one tries to refute it, one reconciles);</li>
+      <li>hand off to a cheaper model just to format the JSON;</li>
+      <li><span class="ink">&hellip;then emit one decision + confidence + evidence,</span> exactly like the simplest formula node.</li>
+    </ul>
+    <p>That&rsquo;s real in our stack: <code>portfolio_displacer</code> pulls news per holding, runs a web search
+      per name, reasons across them, and hands off to structure the output &mdash; several model calls and
+      downloads inside one box the graph treats as atomic. It scales up, too: the <strong>TradingAgents</strong>
+      pattern folds a whole firm (analysts &rarr; bull/bear debate &rarr; trader &rarr; risk committee &rarr; PM)
+      into one &ldquo;debate this name&rdquo; node that outputs buy/pass + confidence + transcript. Two nice consequences:</p>
+    <ul class="bul">
+      <li><span class="ink">The graph stays simple no matter how smart the nodes get</span> &mdash; complexity hides
+        inside the boxes, the wiring between them stays readable.</li>
+      <li><span class="ink">The contract keeps it honest</span> &mdash; however elaborate the insides, the node still
+        declares its tools, cost ceiling, timeout, and output shape, and logs what it did. Power on the inside,
+        accountability at the edge. (Debates run a capped number of rounds &mdash; an unbounded one is just a
+        runaway bill.)</li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <p class="kicker">The space it opens</p>
+    <h2>Why it feels combinatorial</h2>
+    <p class="lead-tight">Because an agent node plugs in like any other, you can drop judgment anywhere in the
+      pipeline &mdash; not a rewrite, a swap. Each classic box can get a smarter twin sitting next to it, taking
+      just the handful of calls the formula gets wrong:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Classic node</th><th>Agentic version</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="classic"><span class="n">universe</span> &mdash; cap/volume cutoffs</td>
+            <td class="up">&ldquo;Cleanly tradeable, or a reverse-merger shell?&rdquo;</td>
+          </tr>
+          <tr>
+            <td class="classic"><span class="n">feature</span> &mdash; count news mentions</td>
+            <td class="up">Read the articles; material positive / neutral / negative, and why</td>
+          </tr>
+          <tr>
+            <td class="classic"><span class="n">alpha_model</span> &mdash; weighted score</td>
+            <td class="up">A catalyst-review step that can veto or bless a name</td>
+          </tr>
+          <tr>
+            <td class="classic"><span class="n">risk_model</span> &mdash; vol/beta</td>
+            <td class="up">&ldquo;Any pending binary event (FDA, litigation, deal) the vol can&rsquo;t see?&rdquo;</td>
+          </tr>
+          <tr>
+            <td class="classic"><span class="n">optimizer</span> &mdash; &ldquo;book is full&rdquo;</td>
+            <td class="up"><span class="n">portfolio_displacer</span> &mdash; which to keep, judged on live theses</td>
+          </tr>
+          <tr>
+            <td class="classic"><span class="n">feedback</span> &mdash; tweak params</td>
+            <td class="up">&ldquo;Is the reason we still hold this actually still true?&rdquo;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Plus a few node types that had no formula version at all &mdash; entity resolution, bull/bear debate,
+      self-critique, weighing disagreeing sources instead of averaging them, thesis tracking, agentic exits
+      (deciding to <em>sell</em> is a judgment too). Ten-ish classic node types, each with a judgment upgrade,
+      all composable &mdash; that&rsquo;s the space you were sensing, and it doesn&rsquo;t really have a fixed size.</p>
+  </section>
+
+  <section class="reveal">
+    <p class="kicker">Disciplined, not reckless</p>
+    <h2>&ldquo;So it&rsquo;s just letting an LLM trade?&rdquo; &mdash; no</h2>
+    <p class="lead-tight">That&rsquo;s the reason to put judgment in a typed graph instead of a chat window:</p>
+    <ul class="guards">
+      <li>
+        <p class="glabel">It fires rarely, never every bar</p>
+        <p>An agent only runs when something upstream trips it &mdash; a news row lands, a condition crosses, the
+          book fills. A handful of calls a day, right where they matter; the fast formulas run everywhere else.
+          (The displacement call costs about $0.04 and only fires when a real winner knocks on a full book.)</p>
+      </li>
+      <li>
+        <p class="glabel">Everything&rsquo;s recorded</p>
+        <p>Each decision saves what the agent saw, the tools it called, its output, and its reasoning &mdash; a
+          receipt you can audit, not a black box.</p>
+      </li>
+      <li>
+        <p class="glabel">The agent never pulls the trigger</p>
+        <p>It emits a decision + confidence; the usual deterministic risk nodes and (optionally) a human gate
+          sit between it and any order.</p>
+      </li>
+      <li>
+        <p class="glabel">You can check whether the judgment&rsquo;s any good</p>
+        <p>It all runs on paper first &mdash; hit-rate by confidence bucket, latency, cost, false positives &mdash; and
+          you can A/B two prompts or two models and keep the winner. Live money is gated behind a paper track
+          record.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <p class="kicker">New arenas</p>
+    <h2>Where this could go: options, crypto, prediction markets</h2>
+    <p class="lead-tight">Everything above is stock-picking, but the useful part &mdash; judgment over messy
+      evidence &mdash; travels to any market where the edge isn&rsquo;t purely arithmetic. Three where agent nodes
+      open doors a traditional algo can&rsquo;t:</p>
+
+    <div class="arena">
+      <p class="arena-label">Options</p>
+      <p class="arena-ceiling">A classic options algo is all formula &mdash; the greeks, the vol surface,
+        delta-hedging. It prices implied volatility to the penny, but can&rsquo;t judge <em>why</em> it&rsquo;s there &mdash;
+        and options are bets on events with a clock, where the whole question (is the implied move too rich
+        or too cheap?) lives in text.</p>
+      <p class="adds">What an agent node adds</p>
+      <ul class="bul">
+        <li>Read the actual catalyst and judge direction &mdash; calls, puts, or a straddle &mdash; instead of trading off IV rank alone.</li>
+        <li>Decide <span class="ink">buy vs sell premium</span>: is this binary event likely to be a big move, or a nothing print the market is overpaying for?</li>
+        <li>Map a thesis onto the right structure (&ldquo;bounded pop &rarr; call spread, not naked calls&rdquo;) and hand the greeks and sizing back to the deterministic layer.</li>
+        <li>Interpret unusual flow: is that big block a hedge, or a directional bet?</li>
+      </ul>
+    </div>
+
+    <div class="arena">
+      <p class="arena-label">Crypto</p>
+      <p class="arena-ceiling">Crypto trades 24/7 and runs on narrative and headlines &mdash; the messy-text
+        world turned up to eleven. Traditional algos arb funding rates and make markets, all on numbers;
+        what they can&rsquo;t do is read the story that moves the number.</p>
+      <p class="adds">What an agent node adds</p>
+      <ul class="bul">
+        <li>Judge a depeg in real time: is a stablecoin under $1 a temporary wobble or a real solvency event? <span class="ink">(The USDC&ndash;SVB weekend is the textbook case</span> &mdash; a formula sees &ldquo;cheap dollar, arb it,&rdquo; a solvency read says &ldquo;get out.&rdquo;)</li>
+        <li>Read token-unlock schedules and tokenomics docs to judge dump risk before a cliff.</li>
+        <li>Tell a genuine protocol exploit from FUD; react to a listing, delisting, or regulatory headline the moment it lands.</li>
+        <li>Verify the contract is the <em>real</em> token, not a same-ticker scam clone &mdash; entity resolution and source-checking matter even more here.</li>
+        <li>24/7 makes the event-born push model native: news breaks at 3am, an agent wakes, investigates one name, and expires.</li>
+      </ul>
+    </div>
+
+    <div class="arena">
+      <p class="arena-label">Kalshi / Polymarket &mdash; prediction markets</p>
+      <p class="arena-ceiling">The purest case. A prediction market is a bet on a plain-English outcome &mdash;
+        &ldquo;Will X happen by date Y?&rdquo; &mdash; often with no price signal at all; fair value is a probability you
+        estimate from evidence. Reading and reasoning <em>is</em> the entire edge.</p>
+      <p class="adds">What an agent node adds</p>
+      <ul class="bul">
+        <li>Read the resolution criteria closely &mdash; these markets live and die on the fine print (&ldquo;resolves YES only if source Z reports&hellip;&rdquo;) &mdash; and catch when the crowd is misreading it.</li>
+        <li>Gather live evidence via web/X search, estimate a probability, compare to the market price, and take the mispriced side.</li>
+        <li>Cross-reference primary sources the instant they drop &mdash; a court docket, a data release, an election call &mdash; and update faster than the market.</li>
+        <li>Traditional algos can basically only arb the same contract across the two venues; <span class="ink">forming the probability from a news event is off-limits to them, because that&rsquo;s a judgment.</span></li>
+      </ul>
+    </div>
+
+    <p>The discipline from the last section still holds everywhere: the agent proposes a decision, confidence,
+      and evidence; deterministic sizing and (optionally) a human gate stand between it and any order; and it
+      earns live capital only after a paper track record.</p>
+  </section>
+
+  <p class="closing reveal">
+    So it&rsquo;s not a robot that trades. It&rsquo;s the same quant pipeline you already trust, that can
+    <b>call an analyst</b> &mdash; sparingly, on the record, right where the math runs out.
+  </p>
+
+  <footer>
+    <span>Alpha-Claw</span>
+    <span>Agent nodes in a trading DAG</span>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var els = document.querySelectorAll(".reveal");
+    if (reduce || !("IntersectionObserver" in window)) {
+      els.forEach(function (el) { el.classList.add("in"); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
