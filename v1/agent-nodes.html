@@ -520,12 +520,14 @@
           &ldquo;did not surface in search results,&rdquo; so it passed. A formula can&rsquo;t be skeptical.</p>
       </li>
       <li>
-        <span class="flabel">The universe can come to you</span>
-        <p>The classic DAG starts from &ldquo;all US equities&rdquo; and filters down on a clock. <span class="ink">Agents
-          let you go the other way:</span> a news row or filing lands, wakes a strategy, and spins up a one-shot
-          look at that one name &mdash; a universe of one, born from an event, that expires when the event resolves.
-          You can&rsquo;t build that from formulas, because the interesting part (&ldquo;is this worth acting on?&rdquo;)
-          <em>is</em> the judgment.</p>
+        <span class="flabel">Strategies can wait for events instead of scanning the market</span>
+        <p>The classic pipeline scans: on a schedule, take every US stock, filter, rank, trade the top of the
+          list. <span class="ink">Agent nodes make the opposite shape practical: don&rsquo;t scan &mdash;
+          wait.</span> A headline or an SEC filing lands, wakes the strategy, and it examines just that one
+          company while the news is minutes old. The question changes from &ldquo;which of 8,000 stocks looks
+          good today?&rdquo; to &ldquo;this just happened to this one stock &mdash; does it matter?&rdquo; A
+          formula pipeline can be woken by an event too &mdash; it just has nothing smart to do when it
+          arrives, because &ldquo;does it matter?&rdquo; is a judgment over messy text.</p>
       </li>
     </ul>
   </section>
@@ -560,7 +562,7 @@
 
   <section class="reveal">
     <p class="kicker">The space it opens</p>
-    <h2>Why it feels combinatorial</h2>
+    <h2>New kinds of nodes, not smarter old ones</h2>
     <p class="lead-tight">Here&rsquo;s the part that&rsquo;s easy to undersell: the space isn&rsquo;t
       &ldquo;your old nodes, but smarter.&rdquo; An agent node doesn&rsquo;t just score what it&rsquo;s handed
       &mdash; it goes and <em>gets</em> things (pull a filing, query the news archive or the position book,
@@ -577,8 +579,8 @@
       <li><span class="ink">Entity resolution</span> &mdash; chase &ldquo;which company is this press release even about?&rdquo; through registries and filings; unglamorous, and everything downstream depends on it.</li>
     </ul>
     <p>These aren&rsquo;t upgrades of classic nodes &mdash; they&rsquo;re new <em>kinds</em> of node: readers,
-      investigators, adjudicators. And they compose: a debate inside a cascade, a critic behind a thesis
-      update. That composition is where the combinatorial feeling comes from.</p>
+      investigators, adjudicators. And they compose &mdash; a debate inside a cascade, a critic behind a
+      thesis update &mdash; each combination a node type nobody had to invent in advance.</p>
     <p class="lead-tight">The mirror move still matters &mdash; but as the <em>on-ramp</em>. Because an agent
       node plugs in like any other box, every classic node can also get a smarter twin, taking just the handful
       of calls the formula gets wrong:</p>
